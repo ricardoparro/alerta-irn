@@ -44,19 +44,15 @@ def check_senhas(session: requests.Session) -> list[dict]:
     r.raise_for_status()
     locais = r.json()
 
-    available = []
+    noteworthy = []
     for item in locais:
         name = item["nome"].lower()
         if not any(f in name for f in LOCAIS_FILTER):
             continue
         servico = item["servico"]
-        if (
-            servico["senhaWeb"]
-            and servico["estado"].upper() == "ABERTO"
-            and item["InstituicaoUsaApp"]
-        ):
-            available.append(item)
-    return available
+        if servico["estado"].upper() not in ("SENHA INIBIDA", "FECHADO"):
+            noteworthy.append(item)
+    return noteworthy
 
 
 def send_telegram(message: str) -> None:
@@ -71,11 +67,12 @@ def send_telegram(message: str) -> None:
 
 
 def format_message(available: list[dict]) -> str:
-    lines = ["🚨 <b>Senhas disponíveis - Passaporte IRN!</b>\n"]
+    lines = ["🚨 <b>Alerta IRN - Passaporte!</b>\n"]
     for item in available:
         s = item["servico"]
         lines.append(
             f"📍 <b>{item['nome']}</b>\n"
+            f"   Estado: {s['estado']}\n"
             f"   Pessoas em espera: {s['utentesEmEspera']}\n"
             f"   Horário: {s['horario']}"
         )
